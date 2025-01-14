@@ -48,9 +48,14 @@ ErrorResult Nats::DoOpen(RecordValPtr config) {
     if ( config->HasField("ttl") )
         kvc.MaxValueSize = config->GetField<CountVal>("ttl")->Get();
 
+    strict = config->GetField<BoolVal>("strict")->Get();
+
     stat = js_CreateKeyValue(&keyVal, jetstream, &kvc);
     if ( stat != NATS_OK )
         return natsStatus_GetText(stat);
+
+    if ( strict && key_type->Tag() != TYPE_STRING )
+        return util::fmt("NATS strict mode can only have string keys, found '%s'", key_type->GetName().c_str());
 
     return std::nullopt;
 }
@@ -85,16 +90,24 @@ std::string makeStringValidKey(std::string_view key) {
 }
 
 ErrorResult Nats::DoPut(ValPtr key, ValPtr value, bool overwrite, double expiration_time, ErrorResultCallback* cb) {
-    auto json_key = key->ToJSON()->ToStdString();
-    auto valid_key = makeStringValidKey(json_key);
+    std::string key_string;
+    if ( strict ) {
+        assert(key_type->Tag() == TYPE_STRING && "Key type must be strings in strict mode");
+        key_string = key->AsStringVal()->Get()->CheckString();
+    }
+    else {
+        auto json_key = key->ToJSON()->ToStdString();
+        key_string = makeStringValidKey(json_key);
+    }
+
     auto json_value = value->ToJSON()->ToStdString();
     uint64_t rev = 0;
 
     natsStatus stat;
     if ( overwrite )
-        stat = kvStore_PutString(&rev, keyVal, valid_key.c_str(), json_value.c_str());
+        stat = kvStore_PutString(&rev, keyVal, key_string.c_str(), json_value.c_str());
     else
-        stat = kvStore_CreateString(&rev, keyVal, valid_key.c_str(), json_value.c_str());
+        stat = kvStore_CreateString(&rev, keyVal, key_string.c_str(), json_value.c_str());
 
     // TODO: If a key exists, the GetText result is just "Error" because
     // stat == NATS_ERR. That's pretty unintuitive, but I'd also be worried that
@@ -109,9 +122,17 @@ ErrorResult Nats::DoPut(ValPtr key, ValPtr value, bool overwrite, double expirat
 
 ValResult Nats::DoGet(ValPtr key, ValResultCallback* cb) {
     kvEntry* entry = NULL;
-    auto json_key = key->ToJSON()->ToStdString();
-    auto valid_key = makeStringValidKey(json_key);
-    auto stat = kvStore_Get(&entry, keyVal, valid_key.c_str());
+    std::string key_string;
+    if ( strict ) {
+        assert(key_type->Tag() == TYPE_STRING && "Key type must be string in strict mode");
+        key_string = key->AsStringVal()->Get()->CheckString();
+    }
+    else {
+        auto json_key = key->ToJSON()->ToStdString();
+        key_string = makeStringValidKey(json_key);
+    }
+
+    auto stat = kvStore_Get(&entry, keyVal, key_string.c_str());
     if ( stat != NATS_OK )
         return nonstd::unexpected<std::string>(util::fmt("Get operation failed: %s", natsStatus_GetText(stat)));
 
@@ -132,10 +153,18 @@ ValResult Nats::DoGet(ValPtr key, ValResultCallback* cb) {
 }
 
 ErrorResult Nats::DoErase(ValPtr key, ErrorResultCallback* cb) {
-    auto json_key = key->ToJSON()->ToStdString();
-    auto valid_key = makeStringValidKey(json_key);
+    std::string key_string;
+    if ( strict ) {
+        assert(key_type->Tag() == TYPE_STRING && "Key type must be string in strict mode");
+        key_string = key->AsStringVal()->Get()->CheckString();
+    }
+    else {
+        auto json_key = key->ToJSON()->ToStdString();
+        key_string = makeStringValidKey(json_key);
+    }
 
-    auto stat = kvStore_Delete(keyVal, valid_key.c_str());
+
+    auto stat = kvStore_Delete(keyVal, key_string.c_str());
     if ( stat != NATS_OK )
         return util::fmt("Erase operation failed: %s", natsStatus_GetText(stat));
 

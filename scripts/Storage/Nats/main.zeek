@@ -5,6 +5,10 @@ export {
 	type NatsOptions: record {
 		## Path to the database's URL
 		url: string &default="nats://localhost:4222";
+		## Whether this is "strict" mode or not. Strict mode will force keys to be strings
+		## and disallow other characters, which allows keys to more closely resemble what
+		## NATS users may expect for subject names.
+		strict: bool &default=F;
 		## The prefix for the Jetstream
 		jetstream_prefix: string &optional;
 		## The domain for the Jetstream. Cannot be set if prefix is.
