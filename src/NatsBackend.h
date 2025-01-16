@@ -7,11 +7,11 @@
 
 namespace zeek::storage::backends::nats {
 
-class Nats : public zeek::storage::Backend {
+class NatsBackend : public zeek::storage::Backend {
 public:
-    Nats() : Backend(true) {}
+    NatsBackend() : Backend(true) {}
 
-    static Backend* Instantiate() { return new Nats(); }
+    static Backend* Instantiate() { return new NatsBackend(); }
     const char* Tag() override { return "NatsStorage"; }
     bool IsOpen() override { return conn != nullptr; }
     void Done() override;
@@ -20,6 +20,9 @@ public:
                       ErrorResultCallback* cb = nullptr) override;
     ValResult DoGet(ValPtr key, ValResultCallback* cb = nullptr) override;
     ErrorResult DoErase(ValPtr key, ErrorResultCallback* cb = nullptr) override;
+
+    // NATS-specific methods
+    ValResult GetHistory(ValPtr key);
 
 private:
     natsConnection* conn = nullptr;

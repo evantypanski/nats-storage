@@ -19,7 +19,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 zeek_plugin_begin(Storage Nats ${ZEEK_PLUGIN_BEGIN_OPTS})
 zeek_plugin_cc(src/Plugin.cc)
-zeek_plugin_cc(src/Nats.cc)
+zeek_plugin_cc(src/NatsBackend.cc)
 zeek_plugin_bif(src/nats.bif)
 zeek_plugin_link_library(${CNATS_LIBRARY})
 zeek_plugin_dist_files(README CHANGES COPYING VERSION)

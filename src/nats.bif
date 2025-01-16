@@ -1,1 +1,30 @@
+%%{
+#include "zeek/storage/Backend.h"
+#include "NatsBackend.h"
+%%}
 
+module Nats;
+
+function Storage::__get_history%(backend: opaque of Storage::BackendHandle, key: any%): any
+    %{
+	auto b = dynamic_cast<zeek::storage::detail::BackendHandleVal*>(backend);
+	if ( ! b ) {
+		zeek::emit_builtin_error("Invalid storage handle", backend);
+		return zeek::val_mgr->Bool(false);
+	}
+	else if ( ! b->backend->IsOpen() ) {
+		zeek::emit_builtin_error("Storage handle is closed", backend);
+		return zeek::val_mgr->Bool(false);
+	}
+
+    if (strcmp(b->backend->Tag(), "NatsStorage") != 0) {
+		zeek::emit_builtin_error("Can only get history via the NATS backend", backend);
+		return zeek::val_mgr->Bool(false);
+    }
+
+	auto key_v = zeek::IntrusivePtr<Val>{NewRef{}, key};
+    // TODO: Better cast :)
+	auto result = ((zeek::storage::backends::nats::NatsBackend *)b->backend.get())->GetHistory(key_v);
+
+	return zeek::val_mgr->Bool(true);
+    %}

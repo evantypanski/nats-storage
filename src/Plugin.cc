@@ -3,14 +3,14 @@
 #include <nats/nats.h>
 #include <zeek/storage/Component.h>
 
-#include "Nats.h"
+#include "NatsBackend.h"
 
 namespace zeek::storage::backend::nats {
 
 Plugin plugin;
 
 zeek::plugin::Configuration Plugin::Configure() {
-    AddComponent(new storage::Component("NATS", zeek::storage::backends::nats::Nats::Instantiate));
+    AddComponent(new storage::Component("NATS", zeek::storage::backends::nats::NatsBackend::Instantiate));
 
     zeek::plugin::Configuration config;
     config.name = "Storage::Nats";

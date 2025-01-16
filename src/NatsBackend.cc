@@ -1,4 +1,4 @@
-#include "Nats.h"
+#include "NatsBackend.h"
 
 #include <nats/nats.h>
 #include <zeek/Func.h>
@@ -7,7 +7,7 @@
 
 namespace zeek::storage::backends::nats {
 
-ErrorResult Nats::DoOpen(RecordValPtr config) {
+ErrorResult NatsBackend::DoOpen(RecordValPtr config) {
     auto url = config->GetField<StringVal>("url")->Get();
     natsStatus stat;
 
@@ -60,7 +60,7 @@ ErrorResult Nats::DoOpen(RecordValPtr config) {
     return std::nullopt;
 }
 
-void Nats::Done() {
+void NatsBackend::Done() {
     kvStore_Destroy(keyVal);
     jsCtx_Destroy(jetstream);
     natsConnection_Destroy(conn);
@@ -89,7 +89,8 @@ std::string makeStringValidKey(std::string_view key) {
     return result;
 }
 
-ErrorResult Nats::DoPut(ValPtr key, ValPtr value, bool overwrite, double expiration_time, ErrorResultCallback* cb) {
+ErrorResult NatsBackend::DoPut(ValPtr key, ValPtr value, bool overwrite, double expiration_time,
+                               ErrorResultCallback* cb) {
     std::string key_string;
     if ( strict ) {
         assert(key_type->Tag() == TYPE_STRING && "Key type must be strings in strict mode");
@@ -120,7 +121,7 @@ ErrorResult Nats::DoPut(ValPtr key, ValPtr value, bool overwrite, double expirat
     return std::nullopt;
 }
 
-ValResult Nats::DoGet(ValPtr key, ValResultCallback* cb) {
+ValResult NatsBackend::DoGet(ValPtr key, ValResultCallback* cb) {
     kvEntry* entry = NULL;
     std::string key_string;
     if ( strict ) {
@@ -152,7 +153,7 @@ ValResult Nats::DoGet(ValPtr key, ValResultCallback* cb) {
     return res;
 }
 
-ErrorResult Nats::DoErase(ValPtr key, ErrorResultCallback* cb) {
+ErrorResult NatsBackend::DoErase(ValPtr key, ErrorResultCallback* cb) {
     std::string key_string;
     if ( strict ) {
         assert(key_type->Tag() == TYPE_STRING && "Key type must be string in strict mode");
@@ -170,4 +171,6 @@ ErrorResult Nats::DoErase(ValPtr key, ErrorResultCallback* cb) {
 
     return std::nullopt;
 }
+ValResult NatsBackend::GetHistory(ValPtr key) { return nonstd::unexpected<std::string>("OMG"); }
+
 } // namespace zeek::storage::backends::nats

@@ -24,4 +24,6 @@ export {
 		## TODO: Probably necessary to move this in to the framework's expiration
 		ttl: count &optional;
 	};
+
+    global get_history: function(backend: opaque of Storage::BackendHandle, key: any): any;
 }
